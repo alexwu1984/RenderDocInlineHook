@@ -32,11 +32,12 @@ typedef std::function<void(void *)> FunctionLoadCallback;
 struct FunctionHook
 {
   FunctionHook() : orig(NULL), hook(NULL) {}
-  FunctionHook(const char *f, void **o, void *d) : function(f), orig(o), hook(d) {}
+  FunctionHook(const char *f, void **o, void *d) : function(f), orig(o), hook(d), old_orig(NULL) {}
   bool operator<(const FunctionHook &h) const { return function < h.function; }
   rdcstr function;
   void **orig;
   void *hook;
+  void *old_orig;    // the old original function when inline hook
 };
 
 // == Hooking workflow overview ==

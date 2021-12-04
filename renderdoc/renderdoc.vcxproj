@@ -24,6 +24,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>renderdoc</RootNamespace>
     <ProjectName>renderdoc</ProjectName>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(SolutionDir)\util\WindowsSDKTarget.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -31,7 +32,7 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Release'" Label="Configuration">
     <LinkIncremental>false</LinkIncremental>
@@ -136,6 +137,14 @@
     <ClInclude Include="3rdparty\jpeg-compressor\jpge.h" />
     <ClInclude Include="3rdparty\lz4\lz4.h" />
     <ClInclude Include="3rdparty\md5\md5.h" />
+    <ClInclude Include="3rdparty\minihook\MinHook.h" />
+    <ClInclude Include="3rdparty\minihook\src\buffer.h" />
+    <ClInclude Include="3rdparty\minihook\src\hde\hde32.h" />
+    <ClInclude Include="3rdparty\minihook\src\hde\hde64.h" />
+    <ClInclude Include="3rdparty\minihook\src\hde\pstdint.h" />
+    <ClInclude Include="3rdparty\minihook\src\hde\table32.h" />
+    <ClInclude Include="3rdparty\minihook\src\hde\table64.h" />
+    <ClInclude Include="3rdparty\minihook\src\trampoline.h" />
     <ClInclude Include="3rdparty\miniz\miniz.h" />
     <ClInclude Include="3rdparty\plthook\plthook.h" />
     <ClInclude Include="3rdparty\pugixml\pugiconfig.hpp" />
@@ -323,6 +332,142 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
+    </ClCompile>
+    <ClCompile Include="3rdparty\minihook\src\buffer.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Development|x64'">precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">
+      </PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeaderFile>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">4100;4127</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4100;4127</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Development|x64'">4100;4127</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4100;4127</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </ForcedIncludeFiles>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Development|x64'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</TreatWarningAsError>
+    </ClCompile>
+    <ClCompile Include="3rdparty\minihook\src\hde\hde32.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Development|x64'">precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">
+      </PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeaderFile>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Development|x64'">4100</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4100</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
+      </ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">4100</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4100</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </ForcedIncludeFiles>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Development|x64'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</TreatWarningAsError>
+    </ClCompile>
+    <ClCompile Include="3rdparty\minihook\src\hde\hde64.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Development|x64'">precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">
+      </PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
+      </ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">4100;4127</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4100;4127</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Development|x64'">4100;4127</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4100;4127</DisableSpecificWarnings>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Development|x64'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</TreatWarningAsError>
+    </ClCompile>
+    <ClCompile Include="3rdparty\minihook\src\hook.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Development|x64'">precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">
+      </PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeaderFile>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">4100;4127</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4100;4127</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Development|x64'">4100;4127</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
+      </ForcedIncludeFiles>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4100;4127</DisableSpecificWarnings>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </ForcedIncludeFiles>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Development|x64'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</TreatWarningAsError>
+    </ClCompile>
+    <ClCompile Include="3rdparty\minihook\src\trampoline.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Development|x64'">precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">
+      </PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeaderFile>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Development|x64'">false</TreatWarningAsError>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</TreatWarningAsError>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Development|Win32'">
+      </ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
+      </ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="3rdparty\miniz\miniz.c">
       <DisableSpecificWarnings>4100;4127</DisableSpecificWarnings>
