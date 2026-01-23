@@ -1243,9 +1243,9 @@ HRESULT WrappedID3D12Device::QueryInterface(REFIID riid, void **ppvObject)
   }
   else if(riid == IRenderDoc_uuid)
   {
-    AddRef();
-    *ppvObject = (IUnknown *)this;
-    return S_OK;
+    // Return E_NOINTERFACE to hide RenderDoc from detection
+    *ppvObject = NULL;
+    return E_NOINTERFACE;
   }
   else if(riid == __uuidof(ID3D12CompatibilityDevice))
   {

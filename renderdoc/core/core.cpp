@@ -477,7 +477,7 @@ void RenderDoc::Initialise()
       "Unknown";
 #endif
 
-  RDCLOG("RenderDoc v%s %s %s %s (%s) %s", MAJOR_MINOR_VERSION_STRING, platform,
+  RDCLOG("Graphics Debugger v%s %s %s %s (%s) %s", MAJOR_MINOR_VERSION_STRING, platform,
          sizeof(uintptr_t) == sizeof(uint64_t) ? "64-bit" : "32-bit",
          ENABLED(RDOC_RELEASE) ? "Release" : "Development", GitVersionHash,
          IsReplayApp() ? "loaded in replay application" : "capturing application");
@@ -509,7 +509,7 @@ void RenderDoc::Initialise()
 
     // only create crash handler when we're not in renderdoccmd.exe (to prevent infinite loop as
     // the crash handler itself launches renderdoccmd.exe)
-    if(!f.contains("renderdoccmd.exe"))
+    if(!f.contains(STRINGIZE(RDOC_CMD_FILE) ".exe"))
     {
       RecreateCrashHandler();
     }

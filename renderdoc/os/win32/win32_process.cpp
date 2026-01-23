@@ -36,6 +36,11 @@
 
 #include <string>
 
+static rdcwstr GetCmdExeName()
+{
+  return StringFormat::UTF82Wide(rdcstr(STRINGIZE(RDOC_CMD_FILE)) + ".exe");
+}
+
 static rdcarray<EnvironmentModification> &GetEnvModifications()
 {
   static rdcarray<EnvironmentModification> envCallbacks;
@@ -721,7 +726,9 @@ rdcpair<ReplayStatus, uint32_t> Process::InjectIntoProcess(
 
       renderdocPath[idx] = 0;
 
-      wcscat_s(renderdocPath, L"\\Win32\\Development\\renderdoccmd.exe");
+      rdcwstr cmdExe = GetCmdExeName();
+      wcscat_s(renderdocPath, L"\\Win32\\Development\\");
+      wcscat_s(renderdocPath, cmdExe.c_str());
     }
 
     if(!devLocation)
@@ -734,7 +741,9 @@ rdcpair<ReplayStatus, uint32_t> Process::InjectIntoProcess(
 
         renderdocPath[idx] = 0;
 
-        wcscat_s(renderdocPath, L"\\Win32\\Release\\renderdoccmd.exe");
+        rdcwstr cmdExe = GetCmdExeName();
+        wcscat_s(renderdocPath, L"\\Win32\\Release\\");
+        wcscat_s(renderdocPath, cmdExe.c_str());
       }
     }
 
@@ -749,7 +758,9 @@ rdcpair<ReplayStatus, uint32_t> Process::InjectIntoProcess(
         *slash = 0;
 
       // append path
-      wcscat_s(renderdocPath, L"\\x86\\renderdoccmd.exe");
+      rdcwstr cmdExe = GetCmdExeName();
+      wcscat_s(renderdocPath, L"\\x86\\");
+      wcscat_s(renderdocPath, cmdExe.c_str());
     }
 #else
     // if it looks like we're in the development environment, look for the alternate bitness in the
@@ -761,7 +772,9 @@ rdcpair<ReplayStatus, uint32_t> Process::InjectIntoProcess(
 
       renderdocPath[idx] = 0;
 
-      wcscat_s(renderdocPath, L"\\x64\\Development\\renderdoccmd.exe");
+      rdcwstr cmdExe = GetCmdExeName();
+      wcscat_s(renderdocPath, L"\\x64\\Development\\");
+      wcscat_s(renderdocPath, cmdExe.c_str());
     }
 
     if(!devLocation)
@@ -774,7 +787,9 @@ rdcpair<ReplayStatus, uint32_t> Process::InjectIntoProcess(
 
         renderdocPath[idx] = 0;
 
-        wcscat_s(renderdocPath, L"\\x64\\Release\\renderdoccmd.exe");
+        rdcwstr cmdExe = GetCmdExeName();
+        wcscat_s(renderdocPath, L"\\x64\\Release\\");
+        wcscat_s(renderdocPath, cmdExe.c_str());
       }
     }
 
@@ -794,7 +809,9 @@ rdcpair<ReplayStatus, uint32_t> Process::InjectIntoProcess(
         *slash = 0;
 
       // append path
-      wcscat_s(renderdocPath, L"\\renderdoccmd.exe");
+      rdcwstr cmdExe = GetCmdExeName();
+      wcscat_s(renderdocPath, L"\\");
+      wcscat_s(renderdocPath, cmdExe.c_str());
     }
 #endif
 
@@ -910,7 +927,7 @@ rdcpair<ReplayStatus, uint32_t> Process::InjectIntoProcess(
     if(!retValue)
     {
       RDCERR(
-          "Can't spawn alternate bitness renderdoccmd - have you built 32-bit and 64-bit?\n"
+          "Can't spawn alternate bitness " STRINGIZE(RDOC_CMD_FILE) " - have you built 32-bit and 64-bit?\n"
           "You need to build the matching bitness for the programs you want to capture.");
       return {ReplayStatus::InternalError, 0};
     }
@@ -1402,7 +1419,7 @@ bool Process::StartGlobalHook(const rdcstr &pathmatch, const rdcstr &capturefile
   renderdocPath = get_dirname(renderdocPath);
 
   // the native renderdoccmd.exe is always next to the dll. Wow32 will be somewhere else
-  rdcstr cmdpathNative = renderdocPath + "\\renderdoccmd.exe";
+  rdcstr cmdpathNative = renderdocPath + "\\" STRINGIZE(RDOC_CMD_FILE) ".exe";
   rdcstr cmdpathWow32;
 
   rdcstr shimpathNative = renderdocPath;
@@ -1421,7 +1438,7 @@ bool Process::StartGlobalHook(const rdcstr &pathmatch, const rdcstr &capturefile
     renderdocPath.erase(devLocation, ~0U);
 
     shimpathWow32 = renderdocPath + "\\Win32\\Development\\renderdocshim32.dll";
-    cmdpathWow32 = renderdocPath + "\\Win32\\Development\\renderdoccmd.exe";
+    cmdpathWow32 = renderdocPath + "\\Win32\\Development\\" STRINGIZE(RDOC_CMD_FILE) ".exe";
   }
   else
   {
@@ -1432,7 +1449,7 @@ bool Process::StartGlobalHook(const rdcstr &pathmatch, const rdcstr &capturefile
       renderdocPath.erase(devLocation, ~0U);
 
       shimpathWow32 = renderdocPath + "\\Win32\\Release\\renderdocshim32.dll";
-      cmdpathWow32 = renderdocPath + "\\Win32\\Release\\renderdoccmd.exe";
+      cmdpathWow32 = renderdocPath + "\\Win32\\Release\\" STRINGIZE(RDOC_CMD_FILE) ".exe";
     }
   }
 
@@ -1440,7 +1457,20 @@ bool Process::StartGlobalHook(const rdcstr &pathmatch, const rdcstr &capturefile
   if(devLocation < 0)
   {
     shimpathWow32 = renderdocPath + "\\x86\\renderdocshim32.dll";
-    cmdpathWow32 = renderdocPath + "\\x86\\renderdoccmd.exe";
+    cmdpathWow32 = renderdocPath + "\\x86\\" STRINGIZE(RDOC_CMD_FILE) ".exe";
+  }
+
+  // check if 32-bit version exists, if not, clear shimpathWow32 to skip registry operations
+  if(!cmdpathWow32.empty())
+  {
+    rdcwstr wcmdpathWow32 = StringFormat::UTF82Wide(cmdpathWow32);
+    DWORD fileAttr = GetFileAttributesW(wcmdpathWow32.c_str());
+    bool wow32Exists = (fileAttr != INVALID_FILE_ATTRIBUTES && !(fileAttr & FILE_ATTRIBUTE_DIRECTORY));
+    if(!wow32Exists)
+    {
+      RDCWARN("32-bit " STRINGIZE(RDOC_CMD_FILE) " not found at '%s' - 32-bit hooking will be unavailable", cmdpathWow32.c_str());
+      shimpathWow32.clear();
+    }
   }
 
 #else
@@ -1526,7 +1556,7 @@ bool Process::StartGlobalHook(const rdcstr &pathmatch, const rdcstr &capturefile
 
   if(retValue == FALSE)
   {
-    RDCERR("Can't launch 64-bit renderdoccmd from '%s'", cmdpathNative.c_str());
+    RDCERR("Can't launch 64-bit " STRINGIZE(RDOC_CMD_FILE) " from '%s'", cmdpathNative.c_str());
     CloseHandle(hookdata.dataNative.pipe);
     RestoreRegistry(hookdata);
     return false;
@@ -1539,58 +1569,62 @@ bool Process::StartGlobalHook(const rdcstr &pathmatch, const rdcstr &capturefile
 
 // repeat the process for the Wow32 renderdoccmd
 #if ENABLED(RDOC_X64)
-  params = StringFormat::Fmt(
-      "\"%s\" globalhook --match \"%s\" --capfile \"%s\" --debuglog \"%s\" --capopts \"%s\"",
-      cmdpathWow32.c_str(), pathmatch.c_str(), capturefile.c_str(), debugLogfile.c_str(),
-      optstr.c_str());
-
-  paramsAlloc = StringFormat::UTF82Wide(params);
-
+  // only launch 32-bit version if it exists (we already checked and cleared shimpathWow32 if not)
+  if(!shimpathWow32.empty() && !cmdpathWow32.empty())
   {
-    SECURITY_ATTRIBUTES pipeSec;
-    pipeSec.nLength = sizeof(SECURITY_ATTRIBUTES);
-    pipeSec.bInheritHandle = TRUE;
-    pipeSec.lpSecurityDescriptor = NULL;
+    params = StringFormat::Fmt(
+        "\"%s\" globalhook --match \"%s\" --capfile \"%s\" --debuglog \"%s\" --capopts \"%s\"",
+        cmdpathWow32.c_str(), pathmatch.c_str(), capturefile.c_str(), debugLogfile.c_str(),
+        optstr.c_str());
 
-    BOOL res;
-    res = CreatePipe(&childEnd, &hookdata.dataWow32.pipe, &pipeSec, 0);
+    paramsAlloc = StringFormat::UTF82Wide(params);
 
-    if(!res)
     {
-      RDCERR("Could not create 64-bit stdin pipe");
-      RestoreRegistry(hookdata);
-      return false;
+      SECURITY_ATTRIBUTES pipeSec;
+      pipeSec.nLength = sizeof(SECURITY_ATTRIBUTES);
+      pipeSec.bInheritHandle = TRUE;
+      pipeSec.lpSecurityDescriptor = NULL;
+
+      BOOL res;
+      res = CreatePipe(&childEnd, &hookdata.dataWow32.pipe, &pipeSec, 0);
+
+      if(!res)
+      {
+        RDCERR("Could not create 64-bit stdin pipe");
+        RestoreRegistry(hookdata);
+        return false;
+      }
+
+      res = SetHandleInformation(hookdata.dataWow32.pipe, HANDLE_FLAG_INHERIT, 0);
+
+      if(!res)
+      {
+        RDCERR("Could not make 64-bit stdin pipe inheritable");
+        RestoreRegistry(hookdata);
+        return false;
+      }
+
+      si.hStdInput = childEnd;
     }
 
-    res = SetHandleInformation(hookdata.dataWow32.pipe, HANDLE_FLAG_INHERIT, 0);
+    retValue = CreateProcessW(NULL, &paramsAlloc[0], &pSec, &tSec, true, CREATE_NEW_CONSOLE, NULL,
+                              NULL, &si, &pi);
 
-    if(!res)
+    // we don't need this end anymore
+    CloseHandle(childEnd);
+
+    if(retValue == FALSE)
     {
-      RDCERR("Could not make 64-bit stdin pipe inheritable");
-      RestoreRegistry(hookdata);
-      return false;
+      RDCWARN("Can't launch 32-bit " STRINGIZE(RDOC_CMD_FILE) " from '%s' - 32-bit hooking will be unavailable", cmdpathWow32.c_str());
+      CloseHandle(hookdata.dataWow32.pipe);
+      hookdata.dataWow32.pipe = NULL;
     }
-
-    si.hStdInput = childEnd;
+    else
+    {
+      CloseHandle(pi.hThread);
+      CloseHandle(pi.hProcess);
+    }
   }
-
-  retValue = CreateProcessW(NULL, &paramsAlloc[0], &pSec, &tSec, true, CREATE_NEW_CONSOLE, NULL,
-                            NULL, &si, &pi);
-
-  // we don't need this end anymore
-  CloseHandle(childEnd);
-
-  if(retValue == FALSE)
-  {
-    RDCERR("Can't launch 32-bit renderdoccmd from '%s'", cmdpathWow32.c_str());
-    CloseHandle(hookdata.dataNative.pipe);
-    CloseHandle(hookdata.dataWow32.pipe);
-    RestoreRegistry(hookdata);
-    return false;
-  }
-
-  CloseHandle(pi.hThread);
-  CloseHandle(pi.hProcess);
 #endif
 
   // set static global pointer with our data, and launch the thread
