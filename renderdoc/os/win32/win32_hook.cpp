@@ -40,7 +40,7 @@
 #include "strings/string_utils.h"
 
 #define VERBOSE_DEBUG_HOOK OPTION_OFF
-#define INLINE_HOOK OPTION_ON
+#define INLINE_HOOK OPTION_OFF  // Temporarily disabled for testing - change back to OPTION_ON if IAT hook works
 
 #if ENABLED(INLINE_HOOK)
 typedef HMODULE(WINAPI *FunTypeLoadLibraryA)(LPCSTR lpLibFileName);
@@ -67,19 +67,71 @@ Threading::CriticalSection inlineInstalledLock;
 #if ENABLED(INLINE_HOOK)
 bool ApplyHookInline(FunctionHook &hook, void **IATentry, bool &already)
 {
+  if(hook.old_orig == NULL)
+  {
+    RDCWARN("ApplyHookInline: hook.old_orig is NULL for function %s", hook.function.c_str());
+    return false;
+  }
+  if(hook.hook == NULL)
+  {
+    RDCWARN("ApplyHookInline: hook.hook is NULL for function %s", hook.function.c_str());
+    return false;
+  }
+  
+  // Check if target address is executable
+  MEMORY_BASIC_INFORMATION mbi;
+  if(VirtualQuery(hook.old_orig, &mbi, sizeof(mbi)) == 0)
+  {
+    RDCWARN("ApplyHookInline: VirtualQuery failed for target %p (function %s)", hook.old_orig, hook.function.c_str());
+    return false;
+  }
+  
+  bool isExecutable = (mbi.Protect & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+  if(!isExecutable)
+  {
+    RDCWARN("ApplyHookInline: Target address %p is not executable (Protect: 0x%08x) for function %s", 
+            hook.old_orig, mbi.Protect, hook.function.c_str());
+    return false;
+  }
+  
   MH_STATUS status = MH_Initialize();
   if(status != MH_OK && status != MH_ERROR_ALREADY_INITIALIZED)
   {
+    RDCWARN("ApplyHookInline: MH_Initialize failed with status %d (%s) for function %s", 
+            status, MH_StatusToString(status), hook.function.c_str());
     return false;
   }
-  if(MH_CreateHook(hook.old_orig, hook.hook, hook.orig) != MH_OK)
+  
+  MH_STATUS createStatus = MH_CreateHook(hook.old_orig, hook.hook, hook.orig);
+  if(createStatus == MH_ERROR_ALREADY_CREATED)
   {
-    return false;
+    // Hook already created, just try to enable it
+#if ENABLED(VERBOSE_DEBUG_HOOK)
+    RDCDEBUG("ApplyHookInline: Hook already created for %s, enabling it", hook.function.c_str());
+#endif
   }
-  if(MH_EnableHook(hook.old_orig) != MH_OK)
+  else if(createStatus != MH_OK)
   {
+    RDCWARN("ApplyHookInline: MH_CreateHook failed with status %d (%s) for function %s (target: %p, hook: %p, Protect: 0x%08x)", 
+            createStatus, MH_StatusToString(createStatus), hook.function.c_str(), hook.old_orig, hook.hook, mbi.Protect);
     return false;
   }
+  
+  MH_STATUS enableStatus = MH_EnableHook(hook.old_orig);
+  if(enableStatus == MH_ERROR_ENABLED)
+  {
+    // Hook already enabled, that's fine
+#if ENABLED(VERBOSE_DEBUG_HOOK)
+    RDCDEBUG("ApplyHookInline: Hook already enabled for %s", hook.function.c_str());
+#endif
+  }
+  else if(enableStatus != MH_OK)
+  {
+    RDCWARN("ApplyHookInline: MH_EnableHook failed with status %d (%s) for function %s (target: %p)", 
+            enableStatus, MH_StatusToString(enableStatus), hook.function.c_str(), hook.old_orig);
+    return false;
+  }
+  
   SCOPED_LOCK(inlineInstalledLock);
   if(s_InlineInstalledHooks.find(hook.orig) == s_InlineInstalledHooks.end())
     s_InlineInstalledHooks[hook.orig] = true;
@@ -221,9 +273,12 @@ struct CachedHookData
 
   void ApplyHooks(const char *modName, HMODULE module)
   {
+    if(modName == NULL || module == NULL)
+      return;
+      
     {
       size_t i = 0;
-      while(modName[i])
+      while(modName[i] && i < sizeof(lowername) - 1)
       {
         lowername[i] = (char)tolower(modName[i]);
         i++;
@@ -407,14 +462,29 @@ struct CachedHookData
         bool applied;
         {
           SCOPED_LOCK(lock);
+          // Ensure old_orig is set before applying hook
+          if(it->old_orig == NULL)
+          {
+            it->old_orig = GetProcAddress(module, it->function.c_str());
+            if(it->old_orig == NULL)
+            {
+              RDCWARN("ApplyHooks: Failed to get address for %s in %s", it->function.c_str(), modName);
+              continue;
+            }
+          }
           applied = ApplyHookInline(*it, NULL, already);
-          if(!applied || (already))
+          if(!applied)
+          {
+            RDCWARN("ApplyHooks: Failed to apply inline hook for %s::%s", modName, it->function.c_str());
+            // Continue trying other functions instead of returning immediately
+            continue;
+          }
+          if(already)
           {
 #if ENABLED(VERBOSE_DEBUG_HOOK)
-            RDCDEBUG("Stopping hooking module, %d %d", (int)applied, (int)already);
+            RDCDEBUG("Hook already applied for %s::%s", modName, it->function.c_str());
 #endif
-            FreeLibrary(refcountModHandle);
-            return;
+            continue;
           }
         }
       }
@@ -675,8 +745,18 @@ static void HookAllModules()
   if(!s_HookData->hookAll)
     return;
 
-  ForAllModules(
-      [](const MODULEENTRY32 &me32) { s_HookData->ApplyHooks(me32.szModule, me32.hModule); });
+  ForAllModules([](const MODULEENTRY32 &me32) {
+    __try
+    {
+      s_HookData->ApplyHooks(me32.szModule, me32.hModule);
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+      RDCWARN("Exception caught while hooking module %s: 0x%08x", me32.szModule, 
+              GetExceptionCode());
+      // Continue processing other modules
+    }
+  });
 
   // check if we're already in this section of code, and if so don't go in again.
   int32_t prev = Atomic::CmpExch32(&s_HookData->posthooking, 0, 1);
